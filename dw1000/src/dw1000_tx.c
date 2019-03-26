@@ -89,8 +89,14 @@ static void initiator(void){
      */
     uint64 seq = 0;    // Count of the message number
     
+    // time test
+    clock_t start;
+    clock_t finish;
+    double total_time;
+    
     /******** Batch message sending loop *********/
     while(seq<BATCH_NUM){
+        start = clock();
         seq++;
         memcpy((void *) &tx_msg[SEQ_IDX], (void *) &seq, sizeof(uint64));
         
@@ -110,6 +116,9 @@ static void initiator(void){
         /* Clear TX frame sent event. */
         dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
         printf("%llu MSG SENT!\r\n", seq);
+        finish = clock();
+        total_time = (double)(finish-start)/CLOCKS_PER_SEC;
+        printf("time consumed %f\n", total_time);
         
         /* Execute a delay between transmissions. */
         sleep_ms(TX_DELAY_MS);
