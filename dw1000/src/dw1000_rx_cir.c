@@ -224,13 +224,13 @@ void receiver(void){
             memcpy((void *) &seq, (void *) &rx_buffer[SEQ_IDX], sizeof(uint64));
             time( &time_rx );
             lctm = localtime( &time_rx );
-            printf("%llu MSG Received! Time: %i.%i.%i %i:%i:%i\n", seq, lctm->tm_year, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
+            printf("%llu MSG Received! Time: %i.%i.%i %i:%i:%i\n", seq, lctm->tm_year+1900, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
             
             /*  Get CIR to our local buffer. */
             copyCIRToBuffer((uint8 *) cir_buffer, 4*CIR_SAMPLES);
             
             char filename[48];
-            snprintf(filename, 47, "..//..//data/%llu_%i%i%i%i%i%i.txt", seq, lctm->tm_year, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
+            snprintf(filename, 47, "../../data/%llu_%i%i%i%i%i%i.txt", seq, lctm->tm_year+1900, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
             saveCIRToFile(filename, cir);
         }
         else

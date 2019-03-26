@@ -109,7 +109,7 @@ static void initiator(void){
         
         /* Clear TX frame sent event. */
         dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-        printf("%llu MSG SENT!", seq);
+        printf("%llu MSG SENT!\n", seq);
         
         /* Execute a delay between transmissions. */
         sleep_ms(TX_DELAY_MS);
