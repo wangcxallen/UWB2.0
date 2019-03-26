@@ -51,7 +51,7 @@ static dwt_config_t config = {
 #define BATCH_NUM 100
 
 /* Inter-frame delay period, in milliseconds. */
-#define TX_DELAY_MS 200
+#define TX_DELAY_MS 20
 
 typedef unsigned long long uint64;
 typedef signed long long int64;
@@ -109,7 +109,7 @@ static void initiator(void){
         
         /* Clear TX frame sent event. */
         dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-        printf("%llu MSG SENT!\n", seq);
+        printf("%llu MSG SENT!\r\n", seq);
         
         /* Execute a delay between transmissions. */
         sleep_ms(TX_DELAY_MS);

@@ -164,7 +164,7 @@ void saveCIRToFile(char *filename, struct cir_tap_struct *cir)
             fprintf(output_file, "%d,%d\n", cir[i].real, cir[i].img);
         }
         fclose(output_file);
-        printf("%s Saved", filename);
+        printf("Saved\n");
     }
 }
 
@@ -230,7 +230,7 @@ void receiver(void){
             copyCIRToBuffer((uint8 *) cir_buffer, 4*CIR_SAMPLES);
             
             char filename[48];
-            snprintf(filename, 47, "../../data/%llu_%i%i%i%i%i%i.txt", seq, lctm->tm_year+1900, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
+            snprintf(filename, 47, "../../data/%i%i%i%i%i%i_%llu.txt", lctm->tm_year+1900, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec, seq);
             saveCIRToFile(filename, cir);
         }
         else
