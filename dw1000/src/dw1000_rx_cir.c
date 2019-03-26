@@ -245,7 +245,7 @@ void receiver(void){
             }
             finish = clock();
             total_time = (double)(finish-start)/CLOCKS_PER_SEC;
-            printf("time consumed %d\n", total_time);
+            printf("time consumed %f\n", total_time);
         }
         else
         {
