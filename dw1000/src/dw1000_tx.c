@@ -48,7 +48,7 @@ static dwt_config_t config = {
 #define SEQ_IDX   2   // time_stamp index
 
 /* Number of messages sent per one call. */
-#define BATCH_NUM 1000
+#define BATCH_NUM 100
 
 /* Inter-frame delay period, in milliseconds. */
 #define TX_DELAY_MS 200
