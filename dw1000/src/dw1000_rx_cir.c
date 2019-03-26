@@ -21,19 +21,22 @@
  /*
  * Modified by:
  * Anh Luong <luong@eng.utah.edu>
+ * Chenxi Wang <wangcxallen@gmail.com>
  */
 
 #include <stdio.h>
 #include <stdlib.h> // malloc, free
 #include <unistd.h>
+#include <stdint.h>
 #include <string.h> // memset
+#include <time.h>  //timeout
 
 #include "deca_device_api.h"
 #include "deca_regs.h"
 #include "platform.h"
 
 /* Example application name and version to display on LCD screen. */
-#define APP_NAME "RX DIAG v1.1"
+#define APP_NAME "HEADCOUNT RX v1.0"
 
 /* Default communication configuration. We use here EVK1000's default mode (mode 3). */
 static dwt_config_t config = {
@@ -51,9 +54,13 @@ static dwt_config_t config = {
 
 static dwt_rxdiag_t diagnostics;
 
+/* Index to access to a certain frame in the tx_msg array. */
+#define TS_IDX   2   // time_stamp index
+
 /* Buffer to store received frame. See NOTE 1 below. */
-#define FRAME_LEN_MAX 127
-static uint8 rx_buffer[FRAME_LEN_MAX];
+#define FRAME_LEN_MAX 127   // Just make sure it contains all the info
+#define RX_BUF_LEN 12   // The same length as tx_msg
+static uint8 rx_buffer[RX_BUF_LEN];
 
 /* Hold copy of status register state here for reference so that it can be examined at a debug breakpoint. */
 static uint32 status_reg = 0;
@@ -65,12 +72,16 @@ static uint16 frame_len = 0;
 // 1016 samples for 64MHz PRF - 4064 bytes
 #define CIR_SAMPLES 100 //1016
 
+typedef unsigned long long uint64;
+typedef signed long long int64;
+
 struct cir_tap_struct {
     uint16 real;
     uint16 img;
 };
 
 #define ACC_CHUNK 64 // bytes read at the same time
+#define TIMEOUT 5   // timeout of the loop
 
 void copyCIRToBuffer(uint8 *buffer, uint16 len)
 {
@@ -119,25 +130,71 @@ void copyCIRToBuffer(uint8 *buffer, uint16 len)
     }
 }
 
+void saveInfoToFile(char *filename, uint64 time, struct cir_tap_struct *cir, dwt_rxdiag_t *diagnostics)
+{
+    FILE *output_file;
+    int i;
+    
+    output_file = fopen(filename, "w");
+    if (output_file == NULL){
+        printf("unable to write\n");
+    }
+    else {
+        
+        fprintf(output_file, "timestamp, %llu\n", time);
+        
+        fprintf(output_file, "maxNoise,%u\n", diagnostics->maxNoise);
+        fprintf(output_file, "stdNoise,%u\n", diagnostics->stdNoise);
+        fprintf(output_file, "firstPath,%u\n", diagnostics->firstPath);
+        fprintf(output_file, "firstPathAmp1,%u\n", diagnostics->firstPathAmp1);
+        fprintf(output_file, "firstPathAmp2,%u\n", diagnostics->firstPathAmp2);
+        fprintf(output_file, "firstPathAmp3,%u\n", diagnostics->firstPathAmp3);
+        fprintf(output_file, "maxGrowthCIR,%u\n", diagnostics->maxGrowthCIR);
+        fprintf(output_file, "rxPreamCount,%u\n", diagnostics->rxPreamCount);
+        
+        fprintf(output_file, "CIRIQ\n");
+        for (i = 0; i < CIR_SAMPLES; i++)
+        {
+            fprintf(output_file, "%d,%d\n", cir[i].real, cir[i].img);
+        }
+        
+        fclose(output_file);
+        printf("Saving successful");
+    }
+}
+
 /**
  * Application entry point.
  */
-int main(int nargs, char** args)
+int main(int argc, char** argv)
 {
-
-    uint8 *cir_buffer;
-    int i;
-
+    /********************************************************/
+    /***************** Variable Declaration *****************/
+    /********************************************************/
+    
+    /* Get sequece number from command line. */
+    int squence_num=0;
+    if(argc==2){
+        squence_num = atoi(argv[1]);
+    }
+    
+    uint64 current_time = 0;   // To store received current time
+    
+    uint8 *cir_buffer;   // To store CIR info
     cir_buffer = (uint8 *) malloc(4*CIR_SAMPLES);
-
-    struct cir_tap_struct *cir = (struct cir_tap_struct *) &cir_buffer[0];
-
     if(cir_buffer == NULL)
     {
         printf("Could not allocate memory\r\n");
         exit(1);
     }
+    struct cir_tap_struct *cir = (struct cir_tap_struct *) &cir_buffer[0];
+    
+    int i;
 
+    /********************************************************/
+    /******************** Initialization ********************/
+    /********************************************************/
+    
     /* Start with board specific hardware init. */
     hardware_init();
 
@@ -157,25 +214,26 @@ int main(int nargs, char** args)
     dwt_configure(&config);
 
     printf("%s\r\n", APP_NAME);
-
-    /* Loop forever receiving frames. */
-    while (1)
+    
+    /********************************************************/
+    /****************** Start receiving MSG *****************/
+    /********************************************************/
+    
+    printf("start sample\n");
+    
+    auto start_time = time(NULL);
+    while(time(NULL)-start_time<TIMEOUT)
     {
-
-        /* TESTING BREAKPOINT LOCATION #1 */
-
         /* Clear local RX buffer to avoid having leftovers from previous receptions  This is not necessary but is included here to aid reading
          * the RX buffer.
          * This is a good place to put a breakpoint. Here (after first time through the loop) the local status register will be set for last event
          * and if a good receive has happened the data buffer will have the data in it, and frame_len will be set to the length of the RX frame. */
-        for (i = 0 ; i < FRAME_LEN_MAX; i++ )
-        {
-            rx_buffer[i] = 0;
-        }
+        memset((void *) rx_buffer, 0, RX_BUF_LEN);
 
-        // clear cir_buffer before next sampling
+        /* clear cir_buffer before next sampling. */
         memset((void *) cir_buffer, 0, 4*CIR_SAMPLES);
 
+        /* clear diagnostics before next sampling. */
         diagnostics.firstPath = 0;
         diagnostics.firstPathAmp1 = 0;
         diagnostics.firstPathAmp2 = 0;
@@ -185,14 +243,24 @@ int main(int nargs, char** args)
         diagnostics.maxNoise = 0;
         diagnostics.stdNoise = 0;
 
+        /* Set timeout.
+         The time parameter used here is in 1.0256 us (512/499.2MHz) units.
+         If set to 0 the timeout is disabled.*/
         /* Activate reception immediately. See NOTE 3 below. */
+        dwt_setrxtimeout(0);
         dwt_rxenable(DWT_START_RX_IMMEDIATE);
 
         /* Poll until a frame is properly received or an error/timeout occurs. See NOTE 4 below.
          * STATUS register is 5 bytes long but, as the event we are looking at is in the first byte of the register, we can use this simplest API
          * function to access it. */
         while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) & (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_ERR)))
-        { };
+        {
+            if(time(NULL)-start_time>TIMEOUT)
+            {
+            break;
+            }
+            
+        };
 
         if (status_reg & SYS_STATUS_RXFCG)
         {
@@ -201,44 +269,39 @@ int main(int nargs, char** args)
 
             /* A frame has been received, copy it to our local buffer. */
             frame_len = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFL_MASK_1023;
-            if (frame_len <= FRAME_LEN_MAX)
+            if (frame_len <= RX_BUF_LEN)
             {
                 dwt_readrxdata(rx_buffer, frame_len, 0);
             }
-   
-            printf("MSG Received! DATA: %s\r\n", rx_buffer);
-
+            /*  Get current time to the local buffer. */
+            memcpy((void *) &current_time, (void *) &rx_buffer[TS_IDX], sizeof(uint64));
+            printf("%u MSG Received! Time: %llu\r\n", squence_num, current_time);
+            
+            /*  Get diagnostic to our local buffer. */
             dwt_readdiagnostics(&diagnostics);
-            printf("FP: %d, STD_NOISE: %d, MAX_NOISE: %d \r\n", diagnostics.firstPath, diagnostics.stdNoise, diagnostics.maxNoise);
-
-            // uint16 fp_int = diagnostics.firstPath / 64;
-            //dwt_readaccdata((uint8 *)&cir, CIR_SAMPLES, (fp_int - 2) * 4);
-            // dwt_readaccdata((uint8 *) cir_buffer, 4*CIR_SAMPLES + 1, 0);
-
+    //        printf("FP: %d, STD_NOISE: %d, MAX_NOISE: %d \r\n", diagnostics.firstPath, diagnostics.stdNoise, diagnostics.maxNoise);
+            
+            /*  Get CIR to our local buffer. */
             copyCIRToBuffer((uint8 *) cir_buffer, 4*CIR_SAMPLES);
 
-            // Print CIR
-
-            // printf("CIR Bytes:");
-            // for(i = 0; i < 4*CIR_SAMPLES + 1; i++)
-            // {
-            //     printf("%01X", cir_buffer[i]);
-            // }
-
-            printf("CIR Real: ");
-            for (i = 0; i < CIR_SAMPLES; i++)
-            {
-                printf("%04X ", cir[i].real);
-            }
-            printf("\n");
-
-            printf("CIR Imaginary: ");
-            for (i = 0; i < CIR_SAMPLES; i++)
-            {
-                 printf("%04X ", cir[i].img);
-            }
-
-            printf("\n");
+    //        printf("CIR Real: ");
+    //        for (i = 0; i < CIR_SAMPLES; i++)
+    //        {
+    //            printf("%04X ", cir[i].real);
+    //        }
+    //        printf("\n");
+    //
+    //        printf("CIR Imaginary: ");
+    //        for (i = 0; i < CIR_SAMPLES; i++)
+    //        {
+    //             printf("%04X ", cir[i].img);
+    //        }
+            
+            char filename[48];
+            snprintf(filename, 47, "/home/pi/UWB/data/msg%llu_%i.csv", current_time, squence_num);
+            saveInfoToFile(filename, current_time, cir, &diagnostics);
+            printf("\nEnd sample\n");
+            break;
         }
         else
         {
@@ -249,7 +312,7 @@ int main(int nargs, char** args)
             dwt_rxreset();
         }
     }
-
+    
     cir = NULL;
     free(cir_buffer);
 }
