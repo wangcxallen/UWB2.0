@@ -175,6 +175,11 @@ void receiver(void){
     struct tm *lctm;
     uint64 seq = 0;
     
+    // time test
+    clock_t start;
+    clock_t finish;
+    double total_time;
+    
     uint8 *cir_buffer;
     cir_buffer = (uint8 *) malloc(4*CIR_SAMPLES);
     if(cir_buffer == NULL)
@@ -211,6 +216,7 @@ void receiver(void){
         
         if (status_reg & SYS_STATUS_RXFCG)
         {
+            start = clock();
             /* Clear good RX frame event in the DW1000 status register. */
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
             
@@ -237,6 +243,9 @@ void receiver(void){
                 snprintf(filename, 47, "../../data/%i%i%i%i%i%i_%llu.txt", lctm->tm_year+1900, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec, seq);
                 saveCIRToFile(filename, cir);
             }
+            finish = clock();
+            total_time = (double)(finish-start)/CLOCKS_PER_SEC;
+            printf("time consumed %d\n", total_time);
         }
         else
         {
