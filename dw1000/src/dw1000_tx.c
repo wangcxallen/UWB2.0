@@ -14,23 +14,21 @@
  /*
  * Modified by:
  * Anh Luong <luong@eng.utah.edu>
- * Further Modified by:
  * Chenxi Wang <chenxiwa@andrew.cmu.edu>
  */
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h>  // malloc, free
 #include <unistd.h>
 #include <stdint.h>
-#include <string.h>
+#include <string.h> // memset
 #include <time.h>
 
 #include "deca_device_api.h"
 #include "deca_regs.h"
 #include "platform.h"
 
-/* Example application name and version to display on LCD screen. */
-#define APP_NAME "HEADCOUNT TX v1.0"
+#define APP_NAME "HEADCOUNT TX v2.0"
 
 /* Default communication configuration. We use here EVK1000's default mode (mode 3). */
 static dwt_config_t config = {
@@ -46,24 +44,43 @@ static dwt_config_t config = {
     (1025 + 64 - 32) /* SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. */
 };
 
-
 /* Index to access to a certain frame in the tx_msg array. */
-#define TS_IDX   2   // time_stamp index
+#define SEQ_IDX   2   // time_stamp index
+
+/* Number of messages sent per one call. */
+#define BATCH_NUM 1000
+
+/* Inter-frame delay period, in milliseconds. */
+#define TX_DELAY_MS 200
 
 typedef unsigned long long uint64;
 typedef signed long long int64;
 
-
-/**
- * Application entry point.
- */
-int main(void)
-{
-    /********************************************************/
-    /***************** Variable Declaration *****************/
-    /********************************************************/
+static void setup_dw1000(void) {
     
-    uint64 time_now = 0;   // To store current time
+    /* Reset and initialise DW1000.
+     * For initialisation, DW1000 clocks must be temporarily set to crystal speed. After initialisation SPI rate can be increased for optimum performance.
+     */
+    reset_DW1000(); /* Target specific drive of RSTn line into DW1000 low for a period. */
+    spi_set_rate_low();
+    
+    if (dwt_initialise(DWT_LOADUCODE) == DWT_ERROR)
+    {
+        printf("%s\n", "INIT FAILED");
+        exit(1);
+    }
+    spi_set_rate_high();
+    
+    /* Configure DW1000. See NOTE 7 below. */
+    dwt_configure(&config);
+    
+    printf("%s\n", APP_NAME);
+}
+
+static void initiator(void){
+    /******** Variable define *********/
+    uint64 time_tx = 0;   // To store current time
+    uint8 tx_msg[] = {0xab, 0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     /*The frame sent in this example is adjusted from an 802.15.4e standard blink. It is a 12-byte frame composed of the following fields:
      *     - byte 0: frame type (0xC5 for a blink).
      *     - byte 1: not used here
@@ -71,57 +88,49 @@ int main(void)
      *     - byte 10/11: frame check-sum, automatically set by DW1000.
      size = 1+1+8+2 = 12
      */
-    uint8 tx_msg[] = {0xab, 0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    uint64 seq = 0;    // Count of the message number
     
-    /********************************************************/
-    /******************** Initialization ********************/
-    /********************************************************/
+    /******** Batch message sending loop *********/
+    while(seq<BATCH_NUM){
+        seq++;
+        memcpy((void *) &tx_msg[SEQ_IDX], (void *) &seq, sizeof(uint64));
+        
+        /* Write frame data to DW1000 and prepare transmission. See NOTE 4 below.*/
+        dwt_writetxdata(sizeof(tx_msg), tx_msg, 0); /* Zero offset in TX buffer. */
+        dwt_writetxfctrl(sizeof(tx_msg), 0, 0); /* Zero offset in TX buffer, no ranging. */
+        
+        /* Start transmission. */
+        dwt_starttx(DWT_START_TX_IMMEDIATE);
+        
+        /* Poll DW1000 until TX frame sent event set. See NOTE 5 below.
+         * STATUS register is 5 bytes long but, as the event we are looking at is in the first byte of the register, we can use this simplest API
+         * function to access it.*/
+        while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS))
+        { };
+        
+        /* Clear TX frame sent event. */
+        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+        printf("MSG SENT! Time: %llu\n", time_tx);
+        
+        /* Execute a delay between transmissions. */
+        sleep_ms(TX_DELAY_MS);
+    }
+}
+
+/**
+ * Application entry point.
+ */
+int main(void)
+{
+    /** Initialization **/
     
     /* Start with board specific hardware init. */
 	hardware_init();
-
-    /* Reset and initialise DW1000. See NOTE 2 below.
-     * For initialisation, DW1000 clocks must be temporarily set to crystal speed. After initialisation SPI rate can be increased for optimum
-     * performance. */
-    reset_DW1000(); /* Target specific drive of RSTn line into DW1000 low for a period. */
-    spi_set_rate_low();
-    if (dwt_initialise(DWT_LOADNONE) == DWT_ERROR)
-    {
-        while (1)
-        { };
-    }
-    spi_set_rate_high();
-
-    /* Configure DW1000. See NOTE 3 below. */
-    dwt_configure(&config);
-    dwt_setleds(0b00000011);
-
-    printf("%s\n", APP_NAME);
+    setup_dw1000();
     
-    /********************************************************/
-    /******************* Start sending MSG ******************/
-    /********************************************************/
-    /* Get current time and copy it to tx_msg*/
-    time_now = time(NULL);
-    memcpy((void *) &tx_msg[TS_IDX], (void *) &time_now, sizeof(uint64));
     
-    /* Write frame data to DW1000 and prepare transmission. See NOTE 4 below.*/
-    dwt_writetxdata(sizeof(tx_msg), tx_msg, 0); /* Zero offset in TX buffer. */
-    dwt_writetxfctrl(sizeof(tx_msg), 0, 0); /* Zero offset in TX buffer, no ranging. */
-
-    /* Start transmission. */
-    dwt_starttx(DWT_START_TX_IMMEDIATE);
-
-    /* Poll DW1000 until TX frame sent event set. See NOTE 5 below.
-     * STATUS register is 5 bytes long but, as the event we are looking at is in the first byte of the register, we can use this simplest API
-     * function to access it.*/
-    while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS))
-    { };
-
-    /* Clear TX frame sent event. */
-    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-    printf("MSG SENT! Time: %llu\n", time_now);
-}
+    /** MSG Sending Loop **/
+    initiator();
 
 /*****************************************************************************************************************************************************
  * NOTES:

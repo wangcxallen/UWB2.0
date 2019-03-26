@@ -29,14 +29,14 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h> // memset
-#include <time.h>  //timeout
+#include <time.h>
 
 #include "deca_device_api.h"
 #include "deca_regs.h"
 #include "platform.h"
 
 /* Example application name and version to display on LCD screen. */
-#define APP_NAME "HEADCOUNT RX v1.0"
+#define APP_NAME "HEADCOUNT RX v2.0"
 
 /* Default communication configuration. We use here EVK1000's default mode (mode 3). */
 static dwt_config_t config = {
@@ -52,15 +52,16 @@ static dwt_config_t config = {
     (1025 + 64 - 32) /* SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. */
 };
 
-static dwt_rxdiag_t diagnostics;
-
 /* Index to access to a certain frame in the tx_msg array. */
-#define TS_IDX   2   // time_stamp index
+#define SEQ_IDX   2   // time_stamp index
 
 /* Buffer to store received frame. See NOTE 1 below. */
 #define FRAME_LEN_MAX 127   // Just make sure it contains all the info
 #define RX_BUF_LEN 12   // The same length as tx_msg
 static uint8 rx_buffer[RX_BUF_LEN];
+
+typedef unsigned long long uint64;
+typedef signed long long int64;
 
 /* Hold copy of status register state here for reference so that it can be examined at a debug breakpoint. */
 static uint32 status_reg = 0;
@@ -68,20 +69,38 @@ static uint32 status_reg = 0;
 /* Hold copy of frame length of frame received (if good) so that it can be examined at a debug breakpoint. */
 static uint16 frame_len = 0;
 
-// 992 samples for 16MHz PRF - 3968 bytes
-// 1016 samples for 64MHz PRF - 4064 bytes
-#define CIR_SAMPLES 100 //1016
-
-typedef unsigned long long uint64;
-typedef signed long long int64;
-
 struct cir_tap_struct {
     uint16 real;
     uint16 img;
-};
+}; // 4 bytes
+
+#define CIR_SAMPLES 100 //1016
+// 992 samples for 16MHz PRF - 3968 bytes
+// 1016 samples for 64MHz PRF - 4064 bytes
 
 #define ACC_CHUNK 64 // bytes read at the same time
 #define TIMEOUT 5   // timeout of the loop
+
+static void setup_dw1000(void) {
+    
+    /* Reset and initialise DW1000.
+     * For initialisation, DW1000 clocks must be temporarily set to crystal speed. After initialisation SPI rate can be increased for optimum performance.
+     */
+    reset_DW1000(); /* Target specific drive of RSTn line into DW1000 low for a period. */
+    spi_set_rate_low();
+    
+    if (dwt_initialise(DWT_LOADUCODE) == DWT_ERROR)
+    {
+        printf("%s\n", "INIT FAILED");
+        exit(1);
+    }
+    spi_set_rate_high();
+    
+    /* Configure DW1000. See NOTE 7 below. */
+    dwt_configure(&config);
+    
+    printf("%s\n", APP_NAME);
+}
 
 void copyCIRToBuffer(uint8 *buffer, uint16 len)
 {
@@ -130,7 +149,7 @@ void copyCIRToBuffer(uint8 *buffer, uint16 len)
     }
 }
 
-void saveInfoToFile(char *filename, uint64 time, struct cir_tap_struct *cir, dwt_rxdiag_t *diagnostics)
+void saveCIRToFile(char *filename, struct cir_tap_struct *cir)
 {
     FILE *output_file;
     int i;
@@ -140,47 +159,21 @@ void saveInfoToFile(char *filename, uint64 time, struct cir_tap_struct *cir, dwt
         printf("unable to write\n");
     }
     else {
-        
-        fprintf(output_file, "timestamp, %llu\n", time);
-        
-        fprintf(output_file, "maxNoise,%u\n", diagnostics->maxNoise);
-        fprintf(output_file, "stdNoise,%u\n", diagnostics->stdNoise);
-        fprintf(output_file, "firstPath,%u\n", diagnostics->firstPath);
-        fprintf(output_file, "firstPathAmp1,%u\n", diagnostics->firstPathAmp1);
-        fprintf(output_file, "firstPathAmp2,%u\n", diagnostics->firstPathAmp2);
-        fprintf(output_file, "firstPathAmp3,%u\n", diagnostics->firstPathAmp3);
-        fprintf(output_file, "maxGrowthCIR,%u\n", diagnostics->maxGrowthCIR);
-        fprintf(output_file, "rxPreamCount,%u\n", diagnostics->rxPreamCount);
-        
-        fprintf(output_file, "CIRIQ\n");
         for (i = 0; i < CIR_SAMPLES; i++)
         {
             fprintf(output_file, "%d,%d\n", cir[i].real, cir[i].img);
         }
-        
         fclose(output_file);
-        printf("Saving successful");
+        printf("%s Saved", filename);
     }
 }
 
-/**
- * Application entry point.
- */
-int main(int argc, char** argv)
-{
-    /********************************************************/
-    /***************** Variable Declaration *****************/
-    /********************************************************/
+void receiver(void){
+    /** Variable Define **/
+    time_t time_rx;
+    uint64 seq = 0;
     
-    /* Get sequece number from command line. */
-    int squence_num=0;
-    if(argc==2){
-        squence_num = atoi(argv[1]);
-    }
-    
-    uint64 current_time = 0;   // To store received current time
-    
-    uint8 *cir_buffer;   // To store CIR info
+    uint8 *cir_buffer;
     cir_buffer = (uint8 *) malloc(4*CIR_SAMPLES);
     if(cir_buffer == NULL)
     {
@@ -189,125 +182,61 @@ int main(int argc, char** argv)
     }
     struct cir_tap_struct *cir = (struct cir_tap_struct *) &cir_buffer[0];
     
-    int i;
-
-    /********************************************************/
-    /******************** Initialization ********************/
-    /********************************************************/
-    
-    /* Start with board specific hardware init. */
-    hardware_init();
-
-    /* Reset and initialise DW1000. See NOTE 2 below.
-     * For initialisation, DW1000 clocks must be temporarily set to crystal speed. After initialisation SPI rate can be increased for optimum
-     * performance. */
-    reset_DW1000(); /* Target specific drive of RSTn line into DW1000 low for a period. */
-    spi_set_rate_low();
-    if (dwt_initialise(DWT_LOADUCODE) == DWT_ERROR)
-    {
-        printf("Unable to initialize UCODE\r\n");
-        exit(1);
-    }
-    spi_set_rate_high();
-
-    /* Configure DW1000. */
-    dwt_configure(&config);
-
-    printf("%s\r\n", APP_NAME);
-    
-    /********************************************************/
-    /****************** Start receiving MSG *****************/
-    /********************************************************/
-    
-    printf("start sample\n");
-    
-    auto start_time = time(NULL);
-    while(time(NULL)-start_time<TIMEOUT)
+    /** CIR Receiving Loop **/
+    while(TRUE)
     {
         /* Clear local RX buffer to avoid having leftovers from previous receptions  This is not necessary but is included here to aid reading
          * the RX buffer.
          * This is a good place to put a breakpoint. Here (after first time through the loop) the local status register will be set for last event
          * and if a good receive has happened the data buffer will have the data in it, and frame_len will be set to the length of the RX frame. */
         memset((void *) rx_buffer, 0, RX_BUF_LEN);
-
+        
         /* clear cir_buffer before next sampling. */
         memset((void *) cir_buffer, 0, 4*CIR_SAMPLES);
-
-        /* clear diagnostics before next sampling. */
-        diagnostics.firstPath = 0;
-        diagnostics.firstPathAmp1 = 0;
-        diagnostics.firstPathAmp2 = 0;
-        diagnostics.firstPathAmp3 = 0;
-        diagnostics.maxGrowthCIR = 0;
-        diagnostics.rxPreamCount = 0;
-        diagnostics.maxNoise = 0;
-        diagnostics.stdNoise = 0;
-
+        
         /* Set timeout.
-         The time parameter used here is in 1.0256 us (512/499.2MHz) units.
-         If set to 0 the timeout is disabled.*/
+         * The time parameter used here is in 1.0256 us (512/499.2MHz) units.
+            If set to 0 the timeout is disabled.*/
         /* Activate reception immediately. See NOTE 3 below. */
-        dwt_setrxtimeout(0);
+//        dwt_setrxtimeout(0);
         dwt_rxenable(DWT_START_RX_IMMEDIATE);
-
+        
         /* Poll until a frame is properly received or an error/timeout occurs. See NOTE 4 below.
-         * STATUS register is 5 bytes long but, as the event we are looking at is in the first byte of the register, we can use this simplest API
-         * function to access it. */
+         * STATUS register is 5 bytes long but, as the event we are looking at is in the first byte of the register, we can use this simplest API.
+            function to access it. */
         while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) & (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_ERR)))
-        {
-            if(time(NULL)-start_time>TIMEOUT)
-            {
-            break;
-            }
-            
-        };
-
+        { };
+        
         if (status_reg & SYS_STATUS_RXFCG)
         {
             /* Clear good RX frame event in the DW1000 status register. */
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
-
+            
             /* A frame has been received, copy it to our local buffer. */
             frame_len = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFL_MASK_1023;
             if (frame_len <= RX_BUF_LEN)
             {
                 dwt_readrxdata(rx_buffer, frame_len, 0);
             }
-            /*  Get current time to the local buffer. */
-            memcpy((void *) &current_time, (void *) &rx_buffer[TS_IDX], sizeof(uint64));
-            printf("%u MSG Received! Time: %llu\r\n", squence_num, current_time);
             
-            /*  Get diagnostic to our local buffer. */
-            dwt_readdiagnostics(&diagnostics);
-    //        printf("FP: %d, STD_NOISE: %d, MAX_NOISE: %d \r\n", diagnostics.firstPath, diagnostics.stdNoise, diagnostics.maxNoise);
+            /*  Get sequence number and local time to the local buffer. */
+            memcpy((void *) &seq, (void *) &rx_buffer[SEQ_IDX], sizeof(uint64));
+            time( &time_rx );
+            tm = localtime( &time_rx );
+            printf("%llu MSG Received! Time: %i.%i.%i %i:%i:%i\n", seq, tm->tm_year, tm->tm_mon, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->sec);
             
             /*  Get CIR to our local buffer. */
             copyCIRToBuffer((uint8 *) cir_buffer, 4*CIR_SAMPLES);
-
-    //        printf("CIR Real: ");
-    //        for (i = 0; i < CIR_SAMPLES; i++)
-    //        {
-    //            printf("%04X ", cir[i].real);
-    //        }
-    //        printf("\n");
-    //
-    //        printf("CIR Imaginary: ");
-    //        for (i = 0; i < CIR_SAMPLES; i++)
-    //        {
-    //             printf("%04X ", cir[i].img);
-    //        }
             
             char filename[48];
-            snprintf(filename, 47, "/home/pi/UWB/data/msg%llu_%i.csv", current_time, squence_num);
-            saveInfoToFile(filename, current_time, cir, &diagnostics);
-            printf("\nEnd sample\n");
-            break;
+            snprintf(filename, 47, "../data/%llu_%i%i%i%i%i%i.txt", seq, tm->tm_year, tm->tm_mon, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->sec);
+            saveCIRToFile(filename, cir);
         }
         else
         {
             /* Clear RX error events in the DW1000 status register. */
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
-
+            
             /* Reset RX to properly reinitialise LDE operation. */
             dwt_rxreset();
         }
@@ -315,6 +244,21 @@ int main(int argc, char** argv)
     
     cir = NULL;
     free(cir_buffer);
+}
+
+/**
+ * Application entry point.
+ */
+int main(int argc, char** argv)
+{
+    /** Initialization **/
+    
+    /* Start with board specific hardware init. */
+    hardware_init();
+    setup_dw1000();
+    
+    /** MSG Receiving Loop **/
+    receiver();
 }
 
 /*****************************************************************************************************************************************************
