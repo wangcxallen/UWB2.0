@@ -173,6 +173,7 @@ void receiver(void){
     time_t time_rx;
     struct tm *lctm;
     uint64 seq = 0;
+    FLAG = 0xab;
     
     uint8 *cir_buffer;
     cir_buffer = (uint8 *) malloc(4*CIR_SAMPLES);
@@ -220,18 +221,22 @@ void receiver(void){
                 dwt_readrxdata(rx_buffer, frame_len, 0);
             }
             
-            /*  Get sequence number and local time to the local buffer. */
-            memcpy((void *) &seq, (void *) &rx_buffer[SEQ_IDX], sizeof(uint64));
-            time( &time_rx );
-            lctm = localtime( &time_rx );
-            printf("%llu MSG Received! Time: %i.%i.%i %i:%i:%i\n", seq, lctm->tm_year+1900, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
-            
-            /*  Get CIR to our local buffer. */
-            copyCIRToBuffer((uint8 *) cir_buffer, 4*CIR_SAMPLES);
-            
-            char filename[48];
-            snprintf(filename, 47, "../../data/%i%i%i%i%i%i_%llu.txt", lctm->tm_year+1900, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec, seq);
-            saveCIRToFile(filename, cir);
+            /*  Check the MSG flag */
+           if (FLAG==rx_buffer[0])
+            {
+                /*  Get sequence number and local time to the local buffer. */
+                memcpy((void *) &seq, (void *) &rx_buffer[SEQ_IDX], sizeof(uint64));
+                time( &time_rx );
+                lctm = localtime( &time_rx );
+                printf("%llu MSG Received! Time: %i.%i.%i %i:%i:%i\n", seq, lctm->tm_year+1900, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
+                
+                /*  Get CIR to our local buffer. */
+                copyCIRToBuffer((uint8 *) cir_buffer, 4*CIR_SAMPLES);
+                
+                char filename[48];
+                snprintf(filename, 47, "../../data/%i%i%i%i%i%i_%llu.txt", lctm->tm_year+1900, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec, seq);
+                saveCIRToFile(filename, cir);
+            }
         }
         else
         {
