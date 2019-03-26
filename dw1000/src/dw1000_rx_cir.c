@@ -171,6 +171,7 @@ void saveCIRToFile(char *filename, struct cir_tap_struct *cir)
 void receiver(void){
     /** Variable Define **/
     time_t time_rx;
+    struct tm *lctm;
     uint64 seq = 0;
     
     uint8 *cir_buffer;
@@ -183,7 +184,7 @@ void receiver(void){
     struct cir_tap_struct *cir = (struct cir_tap_struct *) &cir_buffer[0];
     
     /** CIR Receiving Loop **/
-    while(TRUE)
+    while(1)
     {
         /* Clear local RX buffer to avoid having leftovers from previous receptions  This is not necessary but is included here to aid reading
          * the RX buffer.
@@ -222,14 +223,14 @@ void receiver(void){
             /*  Get sequence number and local time to the local buffer. */
             memcpy((void *) &seq, (void *) &rx_buffer[SEQ_IDX], sizeof(uint64));
             time( &time_rx );
-            tm = localtime( &time_rx );
-            printf("%llu MSG Received! Time: %i.%i.%i %i:%i:%i\n", seq, tm->tm_year, tm->tm_mon, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->sec);
+            lctm = localtime( &time_rx );
+            printf("%llu MSG Received! Time: %i.%i.%i %i:%i:%i\n", seq, lctm->tm_year, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->sec);
             
             /*  Get CIR to our local buffer. */
             copyCIRToBuffer((uint8 *) cir_buffer, 4*CIR_SAMPLES);
             
             char filename[48];
-            snprintf(filename, 47, "../data/%llu_%i%i%i%i%i%i.txt", seq, tm->tm_year, tm->tm_mon, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->sec);
+            snprintf(filename, 47, "../data/%llu_%i%i%i%i%i%i.txt", seq, lctm->tm_year, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
             saveCIRToFile(filename, cir);
         }
         else
