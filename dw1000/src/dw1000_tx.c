@@ -51,7 +51,7 @@ static dwt_config_t config = {
 #define BATCH_NUM 100
 
 /* Inter-frame delay period, in milliseconds. */
-#define TX_DELAY_MS 20
+#define TX_DELAY_MS 10
 
 typedef unsigned long long uint64;
 typedef signed long long int64;
