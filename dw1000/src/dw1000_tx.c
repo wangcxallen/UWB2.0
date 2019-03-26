@@ -116,12 +116,13 @@ static void initiator(void){
         /* Clear TX frame sent event. */
         dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
         printf("%llu MSG SENT!\r\n", seq);
-        finish = clock();
-        total_time = (double)(finish-start)/CLOCKS_PER_SEC;
-        printf("time consumed %f\n", total_time);
         
         /* Execute a delay between transmissions. */
         sleep_ms(TX_DELAY_MS);
+        
+        finish = clock();
+        total_time = (double)(finish-start)/CLOCKS_PER_SEC;
+        printf("time consumed %f\n", total_time);
     }
 }
 

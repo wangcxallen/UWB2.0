@@ -214,9 +214,9 @@ void receiver(void){
         while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) & (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_ERR)))
         { };
         
+        start = clock();
         if (status_reg & SYS_STATUS_RXFCG)
         {
-            start = clock();
             /* Clear good RX frame event in the DW1000 status register. */
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
             
@@ -243,9 +243,6 @@ void receiver(void){
                 snprintf(filename, 47, "../../data/%i%i%i%i%i%i_%llu.txt", lctm->tm_year+1900, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec, seq);
                 saveCIRToFile(filename, cir);
             }
-            finish = clock();
-            total_time = (double)(finish-start)/CLOCKS_PER_SEC;
-            printf("time consumed %f\n", total_time);
         }
         else
         {
@@ -255,6 +252,9 @@ void receiver(void){
             /* Reset RX to properly reinitialise LDE operation. */
             dwt_rxreset();
         }
+        finish = clock();
+        total_time = (double)(finish-start)/CLOCKS_PER_SEC;
+        printf("time consumed %f\n", total_time);
     }
     
     cir = NULL;
