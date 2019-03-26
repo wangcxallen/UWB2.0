@@ -230,7 +230,7 @@ void receiver(void){
             copyCIRToBuffer((uint8 *) cir_buffer, 4*CIR_SAMPLES);
             
             char filename[48];
-            snprintf(filename, 47, "../data/%llu_%i%i%i%i%i%i.txt", seq, lctm->tm_year, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
+            snprintf(filename, 47, "..//data/%llu_%i%i%i%i%i%i.txt", seq, lctm->tm_year, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
             saveCIRToFile(filename, cir);
         }
         else

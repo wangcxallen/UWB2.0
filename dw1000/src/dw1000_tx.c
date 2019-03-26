@@ -79,7 +79,6 @@ static void setup_dw1000(void) {
 
 static void initiator(void){
     /******** Variable define *********/
-    uint64 time_tx = 0;   // To store current time
     uint8 tx_msg[] = {0xab, 0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     /*The frame sent in this example is adjusted from an 802.15.4e standard blink. It is a 12-byte frame composed of the following fields:
      *     - byte 0: frame type (0xC5 for a blink).
@@ -110,7 +109,7 @@ static void initiator(void){
         
         /* Clear TX frame sent event. */
         dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-        printf("MSG SENT! Time: %llu\n", time_tx);
+        printf("%llu MSG SENT!", seq);
         
         /* Execute a delay between transmissions. */
         sleep_ms(TX_DELAY_MS);
