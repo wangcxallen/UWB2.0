@@ -54,6 +54,7 @@ static dwt_config_t config = {
 
 /* Index to access to a certain frame in the tx_msg array. */
 #define SEQ_IDX   2   // time_stamp index
+#define FLAG 0xab   // Flag: check message
 
 /* Buffer to store received frame. See NOTE 1 below. */
 #define FRAME_LEN_MAX 127   // Just make sure it contains all the info
@@ -173,7 +174,6 @@ void receiver(void){
     time_t time_rx;
     struct tm *lctm;
     uint64 seq = 0;
-    FLAG = 0xab;
     
     uint8 *cir_buffer;
     cir_buffer = (uint8 *) malloc(4*CIR_SAMPLES);
