@@ -117,7 +117,7 @@ static void initiator(void){
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
             
             /* Frequency Control */
-            duration = (double)1000*(finish - start)/CLOCLS_PER_SEC;
+            duration = (double)1000*(finish - start)/CLOCKS_PER_SEC;
         }
         printf("%llu MSG SENT!\r\n", seq);
     }
