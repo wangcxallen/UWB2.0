@@ -96,7 +96,6 @@ static void initiator(void){
     
     /******** Batch message sending loop *********/
     while(seq<BATCH_NUM){
-        start = clock();
         seq++;
         memcpy((void *) &tx_msg[SEQ_IDX], (void *) &seq, sizeof(uint64));
         
@@ -118,10 +117,11 @@ static void initiator(void){
         printf("%llu MSG SENT!\r\n", seq);
         
         /* Execute a delay between transmissions. */
+        start = clock();
         sleep_ms(TX_DELAY_MS);
         
         finish = clock();
-        total_time = (double)(finish-start)/CLOCKS_PER_SEC;
+        total_time = (double)1000.0*(finish-start)/CLOCKS_PER_SEC;
         printf("time consumed %f\n", total_time);
     }
 }
