@@ -175,11 +175,6 @@ void receiver(void){
     struct tm *lctm;
     uint64 seq = 0;
     
-    // time test
-    clock_t start;
-    clock_t finish;
-    double total_time;
-    
     uint8 *cir_buffer;
     cir_buffer = (uint8 *) malloc(4*CIR_SAMPLES);
     if(cir_buffer == NULL)
@@ -214,7 +209,6 @@ void receiver(void){
         while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) & (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_ERR)))
         { };
         
-        start = clock();
         if (status_reg & SYS_STATUS_RXFCG)
         {
             /* Clear good RX frame event in the DW1000 status register. */
@@ -252,9 +246,6 @@ void receiver(void){
             /* Reset RX to properly reinitialise LDE operation. */
             dwt_rxreset();
         }
-        finish = clock();
-        total_time = (double)(finish-start)/CLOCKS_PER_SEC;
-        printf("time consumed %f\n", 1000.0*total_time);
     }
     
     cir = NULL;

@@ -50,8 +50,8 @@ static dwt_config_t config = {
 /* Number of messages sent per one call. */
 #define BATCH_NUM 100
 
-/* Inter-frame delay period, in milliseconds. */
-#define TX_DELAY_MS 10000 //usleep for micro
+/* Inter-frame delay period, in microseconds. */
+#define TX_DELAY_MS 10000
 
 typedef unsigned long long uint64;
 typedef signed long long int64;
@@ -89,14 +89,8 @@ static void initiator(void){
      */
     uint64 seq = 0;    // Count of the message number
     
-    // time test
-    clock_t start;
-    clock_t finish;
-    double total_time;
-    
     /******** Batch message sending loop *********/
     while(seq<BATCH_NUM){
-        start = clock();
         seq++;
         memcpy((void *) &tx_msg[SEQ_IDX], (void *) &seq, sizeof(uint64));
         
@@ -120,9 +114,6 @@ static void initiator(void){
         /* Execute a delay between transmissions. */
         usleep(TX_DELAY_MS);
         while(0){}
-        finish = clock();
-        total_time = (double)(finish-start)/CLOCKS_PER_SEC;
-        printf("time consumed %f\n", 1000.0*total_time);
     }
 }
 
