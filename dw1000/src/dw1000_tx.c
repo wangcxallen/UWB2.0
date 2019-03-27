@@ -50,8 +50,8 @@ static dwt_config_t config = {
 /* Number of messages sent per one call. */
 #define BATCH_NUM 100
 
-/* Inter-frame delay period, in microseconds. */
-#define TX_DELAY_MS 10000
+/* Inter-frame delay period, in milliseconds. */
+#define TX_DELAY_MS 10
 
 typedef unsigned long long uint64;
 typedef signed long long int64;
@@ -89,31 +89,37 @@ static void initiator(void){
      */
     uint64 seq = 0;    // Count of the message number
     
+    /* Frequency Control */
+    time_t start;
+    time_t finish;
+    double duration;
+    
     /******** Batch message sending loop *********/
     while(seq<BATCH_NUM){
         seq++;
         memcpy((void *) &tx_msg[SEQ_IDX], (void *) &seq, sizeof(uint64));
-        
-        /* Write frame data to DW1000 and prepare transmission. See NOTE 4 below.*/
-        dwt_writetxdata(sizeof(tx_msg), tx_msg, 0); /* Zero offset in TX buffer. */
-        dwt_writetxfctrl(sizeof(tx_msg), 0, 0); /* Zero offset in TX buffer, no ranging. */
-        
-        /* Start transmission. */
-        dwt_starttx(DWT_START_TX_IMMEDIATE);
-        
-        /* Poll DW1000 until TX frame sent event set. See NOTE 5 below.
-         * STATUS register is 5 bytes long but, as the event we are looking at is in the first byte of the register, we can use this simplest API
-         * function to access it.*/
-        while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS))
-        { };
-        
-        /* Clear TX frame sent event. */
-        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+        start = clock();
+        while (duration<TX_DELAY_MS-2){
+            /* Write frame data to DW1000 and prepare transmission. See NOTE 4 below.*/
+            dwt_writetxdata(sizeof(tx_msg), tx_msg, 0); /* Zero offset in TX buffer. */
+            dwt_writetxfctrl(sizeof(tx_msg), 0, 0); /* Zero offset in TX buffer, no ranging. */
+            
+            /* Start transmission. */
+            dwt_starttx(DWT_START_TX_IMMEDIATE);
+            
+            /* Poll DW1000 until TX frame sent event set. See NOTE 5 below.
+             * STATUS register is 5 bytes long but, as the event we are looking at is in the first byte of the register, we can use this simplest API
+             * function to access it.*/
+            while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS))
+            { };
+            
+            /* Clear TX frame sent event. */
+            dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+            
+            /* Frequency Control */
+            duration = (double)1000*(finish - start)/CLOCLS_PER_SEC;
+        }
         printf("%llu MSG SENT!\r\n", seq);
-        
-        /* Execute a delay between transmissions. */
-        usleep(TX_DELAY_MS);
-        while(0){}
     }
 }
 
