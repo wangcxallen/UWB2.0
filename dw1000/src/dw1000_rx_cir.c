@@ -253,8 +253,8 @@ void receiver(void){
             dwt_rxreset();
         }
         finish = clock();
-        total_time = (double)1000.0*(finish-start)/CLOCKS_PER_SEC;
-        printf("time consumed %f\n", total_time);
+        total_time = (double)(finish-start)/CLOCKS_PER_SEC;
+        printf("time consumed %f\n", 1000.0*total_time);
     }
     
     cir = NULL;
