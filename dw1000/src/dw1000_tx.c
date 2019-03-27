@@ -100,7 +100,7 @@ static void initiator(void){
         memcpy((void *) &tx_msg[SEQ_IDX], (void *) &seq, sizeof(uint64));
         start = clock();
         duration = 0;
-        while (duration<TX_DELAY_MS-2){
+        while (duration<(TX_DELAY_MS-2)){
             /* Write frame data to DW1000 and prepare transmission. See NOTE 4 below.*/
             dwt_writetxdata(sizeof(tx_msg), tx_msg, 0); /* Zero offset in TX buffer. */
             dwt_writetxfctrl(sizeof(tx_msg), 0, 0); /* Zero offset in TX buffer, no ranging. */
