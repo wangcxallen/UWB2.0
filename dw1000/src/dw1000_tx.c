@@ -51,7 +51,7 @@ static dwt_config_t config = {
 #define BATCH_NUM 100
 
 /* Inter-frame delay period, in milliseconds. */
-#define TX_DELAY_MS 10
+#define TX_DELAY_MS 10000 //usleep for micro
 
 typedef unsigned long long uint64;
 typedef signed long long int64;
@@ -118,7 +118,7 @@ static void initiator(void){
         
         /* Execute a delay between transmissions. */
         start = clock();
-        sleep_ms(TX_DELAY_MS);
+        usleep(TX_DELAY_MS);
         while(0){}
         finish = clock();
         total_time = (double)(finish-start)/CLOCKS_PER_SEC;
