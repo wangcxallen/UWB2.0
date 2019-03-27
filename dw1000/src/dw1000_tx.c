@@ -119,7 +119,7 @@ static void initiator(void){
         /* Execute a delay between transmissions. */
         start = clock();
         sleep_ms(TX_DELAY_MS);
-        
+        while(0){}
         finish = clock();
         total_time = (double)(finish-start)/CLOCKS_PER_SEC;
         printf("time consumed %f\n", 1000.0*total_time);
