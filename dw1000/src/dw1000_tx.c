@@ -51,7 +51,7 @@ static dwt_config_t config = {
 #define BATCH_NUM 100
 
 /* Inter-frame delay period, in milliseconds. */
-#define TX_DELAY_MS 100000 //usleep for micro
+#define TX_DELAY_MS 10000 //usleep for micro
 
 typedef unsigned long long uint64;
 typedef signed long long int64;
@@ -96,6 +96,7 @@ static void initiator(void){
     
     /******** Batch message sending loop *********/
     while(seq<BATCH_NUM){
+        start = clock();
         seq++;
         memcpy((void *) &tx_msg[SEQ_IDX], (void *) &seq, sizeof(uint64));
         
@@ -117,7 +118,6 @@ static void initiator(void){
         printf("%llu MSG SENT!\r\n", seq);
         
         /* Execute a delay between transmissions. */
-        start = clock();
         usleep(TX_DELAY_MS);
         while(0){}
         finish = clock();
