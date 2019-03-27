@@ -121,7 +121,7 @@ static void initiator(void){
         sleep_ms(TX_DELAY_MS);
         
         finish = clock();
-        total_time = (double)*(finish-start)/CLOCKS_PER_SEC;
+        total_time = (double)(finish-start)/CLOCKS_PER_SEC;
         printf("time consumed %f\n", 1000.0*total_time);
     }
 }
