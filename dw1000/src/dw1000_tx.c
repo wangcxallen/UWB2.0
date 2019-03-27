@@ -119,6 +119,7 @@ static void initiator(void){
             /* Frequency Control */
             finish = clock();
             duration = (double)1000*(finish - start)/CLOCKS_PER_SEC;
+            printf("%f\r\n", duration);
         }
         printf("%llu MSG SENT!\r\n", seq);
     }
