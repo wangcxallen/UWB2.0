@@ -118,14 +118,14 @@ static void initiator(void){
      *     - byte 10/11: frame check-sum, automatically set by DW1000.
      size = 1+1+8+2 = 12
      */
-    bool flag = 0;
+    char flag = 0;
     /* Frequency Control */
     time_t start;
     double duration;
     
     /******** Batch MSG sending loop *********/
-    for(uint64 seq=0, ++seq, BATCH_NUM){
-        memcpy((void *) &tx_msg[FLAG_IDX], (void *) &seq, sizeof(bool));
+    for(uint64 seq=1, seq++, seq<=BATCH_NUM){
+        memcpy((void *) &tx_msg[FLAG_IDX], (void *) &seq, sizeof(uint64));
         flag = !flag;
         start = clock();
         while (duration<(TX_DELAY_MS-2)){
