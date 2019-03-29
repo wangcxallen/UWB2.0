@@ -124,7 +124,7 @@ static void initiator(void){
     double duration;
     
     /******** Batch MSG sending loop *********/
-    for(uint64 seq=0; seq<BATCH_NUM; ++seq){
+    for(uint64 seq=1; seq<=BATCH_NUM; seq++){
         start = clock();
         memcpy((void *) &tx_msg[FLAG_IDX], (void *) &seq, sizeof(uint64));
         flag = !flag;
