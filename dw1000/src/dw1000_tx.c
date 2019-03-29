@@ -124,10 +124,10 @@ static void initiator(void){
     double duration;
     
     /******** Batch MSG sending loop *********/
-    for(uint64 seq=1; ++seq; seq<BATCH_NUM){
+    for(uint64 seq=0; seq<BATCH_NUM; ++seq){
+        start = clock();
         memcpy((void *) &tx_msg[FLAG_IDX], (void *) &seq, sizeof(uint64));
         flag = !flag;
-        start = clock();
         /* Write frame data to DW1000 and prepare transmission. See NOTE 4 below.*/
         dwt_writetxdata(sizeof(tx_msg), tx_msg, 0); /* Zero offset in TX buffer. */
         dwt_writetxfctrl(sizeof(tx_msg), 0, 0); /* Zero offset in TX buffer, no ranging. */
