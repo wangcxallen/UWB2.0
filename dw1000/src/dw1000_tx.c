@@ -146,9 +146,9 @@ static void initiator(void){
         printf("%llu MSG SENT!\r\n", seq);
         
         /* Frequency Control */
-        while(duration<TX_SLOT_MS){
+        do {
             duration = (double)1000*(clock() - start)/CLOCKS_PER_SEC;
-        }
+        } while (duration<TX_SLOT_MS);
         printf("%f\r\n", duration);
     }
 }
