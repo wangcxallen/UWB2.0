@@ -153,7 +153,7 @@ static void initiator(void){
         do {
 //            duration = (double) 1000* ((clock() - start)/CLOCKS_PER_SEC);
             gettimeofday(&finish, NULL);
-            duration = (double) 1000 * (finish.tv_sec-start.tv_sec)+ (finish.tv_usec-start.tv_usec)/1000
+            duration = (double) 1000 * (finish.tv_sec-start.tv_sec)+ (finish.tv_usec-start.tv_usec)/1000;
         } while (duration<TX_SLOT_MS);
         printf("%f\r\n", duration);
     }
