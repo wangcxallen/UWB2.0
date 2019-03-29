@@ -128,23 +128,21 @@ static void initiator(void){
         memcpy((void *) &tx_msg[FLAG_IDX], (void *) &seq, sizeof(uint64));
         flag = !flag;
         start = clock();
-        while (duration<(TX_DELAY_MS-2)){
-            /* Write frame data to DW1000 and prepare transmission. See NOTE 4 below.*/
-            dwt_writetxdata(sizeof(tx_msg), tx_msg, 0); /* Zero offset in TX buffer. */
-            dwt_writetxfctrl(sizeof(tx_msg), 0, 0); /* Zero offset in TX buffer, no ranging. */
-            
-            /* Start transmission. */
-            dwt_starttx(DWT_START_TX_IMMEDIATE);
-            
-            /* Poll DW1000 until TX frame sent event set. See NOTE 5 below.
-             * STATUS register is 5 bytes long but, as the event we are looking at is in the first byte of the register, we can use this simplest API
-             * function to access it.*/
-            while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS))
-            { };
-            
-            /* Clear TX frame sent event. */
-            dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-        }
+        /* Write frame data to DW1000 and prepare transmission. See NOTE 4 below.*/
+        dwt_writetxdata(sizeof(tx_msg), tx_msg, 0); /* Zero offset in TX buffer. */
+        dwt_writetxfctrl(sizeof(tx_msg), 0, 0); /* Zero offset in TX buffer, no ranging. */
+        
+        /* Start transmission. */
+        dwt_starttx(DWT_START_TX_IMMEDIATE);
+        
+        /* Poll DW1000 until TX frame sent event set. See NOTE 5 below.
+         * STATUS register is 5 bytes long but, as the event we are looking at is in the first byte of the register, we can use this simplest API
+         * function to access it.*/
+        while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS))
+        { };
+        
+        /* Clear TX frame sent event. */
+        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
         printf("%llu MSG SENT!\r\n", seq);
         
         /* Frequency Control */
