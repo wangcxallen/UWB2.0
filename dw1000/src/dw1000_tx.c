@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <string.h> // memset
 #include <time.h>
+//#include <sys/time.h>
 
 #include "deca_device_api.h"
 #include "deca_regs.h"
@@ -120,13 +121,15 @@ static void initiator(void){
      */
     char flag = 0;
     /* Frequency Control */
-    time_t start;
-    double duration;
+//    time_t start;
+//    double duration;
+    struct timeval start;
+    struct timeval finish;
     
     /******** Batch MSG sending loop *********/
     for(uint64 seq=1; seq<=BATCH_NUM; seq++){
-        start = clock();
-        t1 = std::chrono::steady_clock::now();
+//        start = clock();
+        gettimeofday(&start, NULL);
         memcpy((void *) &tx_msg[FLAG_IDX], (void *) &seq, sizeof(uint64));
         flag = !flag;
         /* Write frame data to DW1000 and prepare transmission. See NOTE 4 below.*/
@@ -148,7 +151,9 @@ static void initiator(void){
         
         /* Frequency Control */
         do {
-            duration = (double)1000*(clock() - start)/CLOCKS_PER_SEC;
+//            duration = (double) 1000* ((clock() - start)/CLOCKS_PER_SEC);
+            gettimeofday(&finish, NULL);
+            duration = (double) 1000 * (end.tv_sec-start.tv_sec)+ (end.tv_usec-start.tv_usec)/1000
         } while (duration<TX_SLOT_MS);
         printf("%f\r\n", duration);
     }
