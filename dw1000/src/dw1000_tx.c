@@ -45,13 +45,13 @@ static dwt_config_t config = {
 };
 
 /* Index to access to a certain frame in the tx_msg array. */
-#define SEQ_IDX   2   // time_stamp index
+#define FLAG_IDX   1   // flag index
 
 /* Number of messages sent per one call. */
 #define BATCH_NUM 100
 
 /* Inter-frame delay period, in milliseconds. */
-#define TX_DELAY_MS 10
+#define TX_SLOT_MS 50
 
 typedef unsigned long long uint64;
 typedef signed long long int64;
@@ -77,8 +77,39 @@ static void setup_dw1000(void) {
     printf("%s\n", APP_NAME);
 }
 
+/*! ------------------------------------------------------------------------------------------------------------------
+ * @fn get_system_timestamp_u64()
+ *
+ * @brief Get the system in a 64-bit variable.
+ *
+ * @param  none
+ *
+ * @return  64-bit value of the system time.
+ */
+static uint64 get_system_timestamp_u64(void) {
+    uint8 ts_tab[5];
+    uint64 ts = 0;
+    int i;
+    dwt_readsystime(ts_tab);
+    for (i = 4; i >= 0; i--)
+    {
+        ts <<= 8;
+        ts |= ts_tab[i];
+    }
+    return ts;
+}
+
+/*! ------------------------------------------------------------------------------------------------------------------
+ * @fn initiator()
+ *
+ * @brief Send the MSG for given time slot and batch number.
+ *
+ * @param  none
+ *
+ * @return  none
+ */
 static void initiator(void){
-    /******** Variable define *********/
+    /******** Variable Define *********/
     uint8 tx_msg[] = {0xab, 0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     /*The frame sent in this example is adjusted from an 802.15.4e standard blink. It is a 12-byte frame composed of the following fields:
      *     - byte 0: frame type (0xC5 for a blink).
@@ -87,19 +118,16 @@ static void initiator(void){
      *     - byte 10/11: frame check-sum, automatically set by DW1000.
      size = 1+1+8+2 = 12
      */
-    uint64 seq = 0;    // Count of the message number
-    
+    bool flag = 0;
     /* Frequency Control */
     time_t start;
-    time_t finish;
     double duration;
     
-    /******** Batch message sending loop *********/
-    while(seq<BATCH_NUM){
-        seq++;
-        memcpy((void *) &tx_msg[SEQ_IDX], (void *) &seq, sizeof(uint64));
+    /******** Batch MSG sending loop *********/
+    for(uint64 seq=0, ++seq, BATCH_NUM){
+        memcpy((void *) &tx_msg[FLAG_IDX], (void *) &seq, sizeof(bool));
+        flag = !flag;
         start = clock();
-        duration = 0;
         while (duration<(TX_DELAY_MS-2)){
             /* Write frame data to DW1000 and prepare transmission. See NOTE 4 below.*/
             dwt_writetxdata(sizeof(tx_msg), tx_msg, 0); /* Zero offset in TX buffer. */
@@ -116,18 +144,25 @@ static void initiator(void){
             
             /* Clear TX frame sent event. */
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-            
-            /* Frequency Control */
-            finish = clock();
-            duration = (double)1000*(finish - start)/CLOCKS_PER_SEC;
-            printf("%f\r\n", duration);
         }
         printf("%llu MSG SENT!\r\n", seq);
+        
+        /* Frequency Control */
+        while(duration<TX_SLOT_MS){
+            duration = (double)1000*(clock() - start)/CLOCKS_PER_SEC;
+        }
+        printf("%f\r\n", duration);
     }
 }
 
-/**
- * Application entry point.
+/*! ------------------------------------------------------------------------------------------------------------------
+ * @fn main()
+ *
+ * @brief Application entry point.
+ *
+ * @param  none
+ *
+ * @return none
  */
 int main(void)
 {

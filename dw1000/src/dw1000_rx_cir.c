@@ -53,7 +53,7 @@ static dwt_config_t config = {
 };
 
 /* Index to access to a certain frame in the tx_msg array. */
-#define SEQ_IDX   2   // time_stamp index
+#define FLAG_IDX   1   // time_stamp index
 #define FLAG 0xab   // Flag: check message
 
 /* Buffer to store received frame. See NOTE 1 below. */
@@ -226,7 +226,7 @@ void receiver(void){
            if (FLAG==rx_buffer[0])
             {
                 /*  Get sequence number to the local buffer. */
-                memcpy((void *) &seq_buffer, (void *) &rx_buffer[SEQ_IDX], sizeof(uint64));
+                memcpy((void *) &seq_buffer, (void *) &rx_buffer[FLAG_IDX], sizeof(uint64));
                 if (seq<seq_buffer){
                     seq = seq_buffer;
                     time( &time_rx );
