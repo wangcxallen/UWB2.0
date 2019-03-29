@@ -79,28 +79,6 @@ static void setup_dw1000(void) {
 }
 
 /*! ------------------------------------------------------------------------------------------------------------------
- * @fn get_system_timestamp_u64()
- *
- * @brief Get the system in a 64-bit variable.
- *
- * @param  none
- *
- * @return  64-bit value of the system time.
- */
-static uint64 get_system_timestamp_u64(void) {
-    uint8 ts_tab[5];
-    uint64 ts = 0;
-    int i;
-    dwt_readsystime(ts_tab);
-    for (i = 4; i >= 0; i--)
-    {
-        ts <<= 8;
-        ts |= ts_tab[i];
-    }
-    return ts;
-}
-
-/*! ------------------------------------------------------------------------------------------------------------------
  * @fn initiator()
  *
  * @brief Send the MSG for given time slot and batch number.
@@ -121,15 +99,13 @@ static void initiator(void){
      */
     char flag = 0;
     /* Frequency Control */
-//    time_t start;
     double duration;
-    struct timeval start;
-    struct timeval finish;
+    struct timeval tm_last;
+    struct timeval tm_now;
+    gettimeofday(&tm_last, NULL);
     
     /******** Batch MSG sending loop *********/
     for(uint64 seq=1; seq<=BATCH_NUM; seq++){
-//        start = clock();
-        gettimeofday(&start, NULL);
         memcpy((void *) &tx_msg[FLAG_IDX], (void *) &seq, sizeof(uint64));
         flag = !flag;
         /* Write frame data to DW1000 and prepare transmission. See NOTE 4 below.*/
@@ -151,10 +127,10 @@ static void initiator(void){
         
         /* Frequency Control */
         do {
-//            duration = (double) 1000* ((clock() - start)/CLOCKS_PER_SEC);
-            gettimeofday(&finish, NULL);
-            duration = (double) 1000 * (finish.tv_sec-start.tv_sec)+ (finish.tv_usec-start.tv_usec)/1000;
+            gettimeofday(&now, NULL);
+            duration = (double) 1000 * (tm_now.tv_sec - tm_last.tv_sec) + (tm_now.tv_usec - tm_last.tv_usec)/1000;
         } while (duration<TX_SLOT_MS);
+        memcpy((void *) &tm_last, (void *) &tm_now, sizeof(struct timeval));
         printf("%f\r\n", duration);
     }
 }
