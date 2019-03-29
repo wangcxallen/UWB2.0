@@ -127,7 +127,7 @@ static void initiator(void){
         
         /* Frequency Control */
         do {
-            gettimeofday(&now, NULL);
+            gettimeofday(&tm_now, NULL);
             duration = (double) 1000 * (tm_now.tv_sec - tm_last.tv_sec) + (tm_now.tv_usec - tm_last.tv_usec)/1000;
         } while (duration<TX_SLOT_MS);
         memcpy((void *) &tm_last, (void *) &tm_now, sizeof(struct timeval));
