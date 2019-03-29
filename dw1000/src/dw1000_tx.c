@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include <string.h> // memset
 #include <time.h>
-//#include <sys/time.h>
+#include <sys/time.h>
 
 #include "deca_device_api.h"
 #include "deca_regs.h"
