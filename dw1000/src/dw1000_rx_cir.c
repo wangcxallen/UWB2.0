@@ -150,27 +150,27 @@ void copyCIRToBuffer(uint8 *buffer, uint16 len)
     }
 }
 
-void saveCIRToFile(char *filename, struct cir_tap_struct *cir)
+void saveCIRToFile(FILE *output_file;, struct timespec &tm_rx, struct cir_tap_struct *cir)
 {
-    FILE *output_file;
     int i;
     
-    output_file = fopen(filename, "w");
     if (output_file == NULL){
         printf("unable to write\n");
     }
     else {
+        fprintf(output_file, "%ld,%lu", tm_rx->tv_sec, tm_rx->usec);
         for (i = 0; i < CIR_SAMPLES; i++)
         {
-            fprintf(output_file, "%d,%d\n", cir[i].real, cir[i].img);
+            fprintf(output_file, ",%d,%d", cir[i].real, cir[i].img);
         }
-        fclose(output_file);
+        fprintf(output_file, "\n");
         printf("Saved\n");
     }
 }
 
-void receiver(void){
+void receiver(FILE *fp){
     /** Variable Define **/
+    struct timespec tm_rx;
     time_t time_rx;
     struct tm *lctm;
     uint64 seq = 0;
@@ -225,6 +225,9 @@ void receiver(void){
             /*  Check the MSG flag */
            if (FLAG==rx_buffer[0])
             {
+                /*  Get receive timestamp */
+                clock_gettime(CLOCK_REALTIME, &tm_rx);
+                
                 /*  Get sequence number to the local buffer. */
                 memcpy((void *) &seq_buffer, (void *) &rx_buffer[FLAG_IDX], sizeof(uint64));
                 if (seq<seq_buffer){
@@ -236,9 +239,7 @@ void receiver(void){
                     /*  Get CIR to our local buffer. */
                     copyCIRToBuffer((uint8 *) cir_buffer, 4*CIR_SAMPLES);
                     
-                    char filename[48];
-                    snprintf(filename, 47, "../../data/%i%i%i%i%i%i_%llu.txt", lctm->tm_year+1900, lctm->tm_mon, lctm->tm_mday, lctm->tm_hour, lctm->tm_min, lctm->tm_sec, seq);
-                    saveCIRToFile(filename, cir);
+                    saveCIRToFile(fp, &tm_rx, cir);
                 }
             }
         }
@@ -261,14 +262,40 @@ void receiver(void){
  */
 int main(int argc, char** argv)
 {
-    /** Initialization **/
+    /** Mode Configuration **/
+    if (1 == argc){
+        /* If you want to log the CIR for off-line processing,
+         * you need to specify the name of the output file
+         */
+        printf("/**************************************/\n");
+        printf("/*  Usage: dw1000_rx_cir <filename>   */\n");
+        printf("/**************************************/\n");
+    }
+    if (2 == argc){
+        FILE* fp;
+        char filename[48];
+        snprintf(filename, 47, "../../data/" + argv[1]);
+        fp = fopen(filename,"w");
+        if (!fp){
+            printf("Fail to open <output_file>, are you root?\n");
+            fclose(fp);
+            return 0;
+        }
+    }
+    if (argc > 2){
+        printf(" Too many input arguments !\n");
+        return 0;
+    }
     
+    /** Initialization **/
     /* Start with board specific hardware init. */
     hardware_init();
     setup_dw1000();
     
     /** MSG Receiving Loop **/
-    receiver();
+    receiver(fp);
+    
+    fclose(fp);
 }
 
 /*****************************************************************************************************************************************************
