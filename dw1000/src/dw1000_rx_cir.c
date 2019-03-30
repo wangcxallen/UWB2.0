@@ -75,7 +75,7 @@ struct cir_tap_struct {
     uint16 img;
 }; // 4 bytes
 
-#define CIR_SAMPLES 100 //1016
+#define CIR_SAMPLES 1016 //1016
 // 992 samples for 16MHz PRF - 3968 bytes
 // 1016 samples for 64MHz PRF - 4064 bytes
 
