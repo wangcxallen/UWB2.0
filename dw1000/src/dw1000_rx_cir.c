@@ -262,6 +262,9 @@ void receiver(FILE *fp){
  */
 int main(int argc, char** argv)
 {
+    /** Variable Define **/
+    FILE* fp;
+    
     /** Mode Configuration **/
     if (1 == argc){
         /* If you want to log the CIR for off-line processing,
@@ -272,9 +275,8 @@ int main(int argc, char** argv)
         printf("/**************************************/\n");
     }
     if (2 == argc){
-        FILE* fp;
         char filename[48];
-        snprintf(filename, 47, "../../data/" + argv[1]);
+        snprintf(filename, 47, "../../data/" + str(argv[1]));
         fp = fopen(filename,"w");
         if (!fp){
             printf("Fail to open <output_file>, are you root?\n");
@@ -296,6 +298,7 @@ int main(int argc, char** argv)
     receiver(fp);
     
     fclose(fp);
+    return 0;
 }
 
 /*****************************************************************************************************************************************************
