@@ -150,7 +150,7 @@ void copyCIRToBuffer(uint8 *buffer, uint16 len)
     }
 }
 
-void saveCIRToFile(FILE *output_file;, struct timespec &tm_rx, struct cir_tap_struct *cir)
+void saveCIRToFile(FILE *output_file, struct timespec &tm_rx, struct cir_tap_struct *cir)
 {
     int i;
     
@@ -276,7 +276,7 @@ int main(int argc, char** argv)
     }
     if (2 == argc){
         char filename[48];
-        snprintf(filename, 47, "../../data/" + str(argv[1]));
+        snprintf(filename, 47, "../../data/" + (str)argv[1]);
         fp = fopen(filename,"w");
         if (!fp){
             printf("Fail to open <output_file>, are you root?\n");
