@@ -273,6 +273,7 @@ int main(int argc, char** argv)
         printf("/**************************************/\n");
         printf("/*  Usage: dw1000_rx_cir <filename>   */\n");
         printf("/**************************************/\n");
+        return 0;
     }
     if (2 == argc){
         char filename[48];
