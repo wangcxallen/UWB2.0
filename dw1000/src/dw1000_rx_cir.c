@@ -53,7 +53,7 @@ static dwt_config_t config = {
 };
 
 /* Index to access to a certain frame in the tx_msg array. */
-#define FLAG_IDX   1   // time_stamp index
+#define FLAG_IDX   2   // time_stamp index
 #define FLAG 0xab   // Flag: check message
 
 /* Buffer to store received frame. See NOTE 1 below. */

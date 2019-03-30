@@ -45,10 +45,10 @@ static dwt_config_t config = {
 };
 
 /* Index to access to a certain frame in the tx_msg array. */
-#define FLAG_IDX   1   // flag index
+#define FLAG_IDX   2   // flag index
 
 /* Number of messages sent per one call. */
-#define BATCH_NUM 100
+#define BATCH_NUM 6000
 
 /* Inter-frame delay period, in milliseconds. */
 #define TX_SLOT_MS 50
