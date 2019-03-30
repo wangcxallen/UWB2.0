@@ -23,7 +23,6 @@
 #include <stdint.h>
 #include <string.h> // memset
 #include <time.h>
-#include <sys/time.h>
 
 #include "deca_device_api.h"
 #include "deca_regs.h"
@@ -100,9 +99,9 @@ static void initiator(void){
     char flag = 0;
     /* Frequency Control */
     double duration;
-    struct timeval tm_last;
-    struct timeval tm_now;
-    gettimeofday(&tm_last, NULL);
+    struct timespec tm_last;
+    struct timespec tm_now;
+    clock_gettime(CLOCK_REALTIME, &tm_last);
     
     /******** Batch MSG sending loop *********/
     for(uint64 seq=1; seq<=BATCH_NUM; seq++){
@@ -127,10 +126,10 @@ static void initiator(void){
         
         /* Frequency Control */
         do {
-            gettimeofday(&tm_now, NULL);
-            duration = (double) 1000 * (tm_now.tv_sec - tm_last.tv_sec) + (tm_now.tv_usec - tm_last.tv_usec)/1000;
+            clock_gettime(CLOCK_REALTIME, &tm_now);
+            duration = (double) 1000 * (tm_now.tv_sec - tm_last.tv_sec) + (tm_now.tv_nsec - tm_last.tv_nsec)/1000000;
         } while (duration<TX_SLOT_MS);
-        memcpy((void *) &tm_last, (void *) &tm_now, sizeof(struct timeval));
+        memcpy((void *) &tm_last, (void *) &tm_now, sizeof(struct timespec));
         printf("%f\r\n", duration);
     }
 }
