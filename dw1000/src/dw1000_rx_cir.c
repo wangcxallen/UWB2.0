@@ -276,7 +276,7 @@ int main(int argc, char** argv)
     }
     if (2 == argc){
         char filename[48];
-        snprintf(filename, 47, "../../data/" + (str)argv[1]);
+        snprintf(filename, 47, "../../data/%s", argv[1]);
         fp = fopen(filename,"w");
         if (!fp){
             printf("Fail to open <output_file>, are you root?\n");
