@@ -158,7 +158,7 @@ void saveCIRToFile(FILE *output_file, struct timespec *tm_rx, struct cir_tap_str
         printf("unable to write\n");
     }
     else {
-        fprintf(output_file, "%ld,%lu", tm_rx->tv_sec, tm_rx->nsec);
+        fprintf(output_file, "%ld,%lu", tm_rx->tv_sec, tm_rx->tv_nsec);
         for (i = 0; i < CIR_SAMPLES; i++)
         {
             fprintf(output_file, ",%d,%d", cir[i].real, cir[i].img);
