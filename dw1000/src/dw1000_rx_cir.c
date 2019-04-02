@@ -164,7 +164,7 @@ void saveCIRToFile(FILE *output_file, struct timespec *tm_rx, struct cir_tap_str
             fprintf(output_file, ",%d,%d", cir[i].real, cir[i].img);
         }
         fprintf(output_file, "\n");
-        fflush(fp);
+        fflush(output_file);
         printf("Saved\n");
     }
 }
