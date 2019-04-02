@@ -48,7 +48,7 @@ static dwt_config_t config = {
 #define FLAG_IDX   2   // flag index
 
 /* Number of messages sent per one call. */
-#define BATCH_NUM 6000
+#define BATCH_NUM 72000
 
 /* Inter-frame delay period, in milliseconds. */
 #define TX_SLOT_MS 50
