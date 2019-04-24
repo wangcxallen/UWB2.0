@@ -59,3 +59,17 @@ sudo mount -t exfat /dev/*** /home/pi/UWB2.0/data/drive
 ```
 sudo umount /dev/***
 ```
+###Auto-mounting while start-up
+Check the partUUID of the drive
+```
+blkid
+```
+Edit this file
+```
+sudo nano /etc/fstab
+```
+Put this new dirve in the list
+```
+PARTUUID=***  /home/pi/UWB2.0/data/drive      exfat   defaults          0       2
+```
+
