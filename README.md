@@ -59,7 +59,7 @@ sudo mount -t exfat /dev/*** /home/pi/UWB2.0/data/drive
 ```
 sudo umount /dev/***
 ```
-###Auto-mounting while start-up
+### Auto-mounting while start-up
 Check the partUUID of the drive
 ```
 blkid
