@@ -12,6 +12,6 @@ sudo mkdir /media/headcount*
 ```
 sudo mount -t exfat /dev/*** /media/headcount*
 ```
-`
+```
 sudo umount /dev/***
-`
+```
