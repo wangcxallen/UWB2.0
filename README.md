@@ -54,7 +54,7 @@ Mounting drive will eliminate all data from the mount point. Thus it's better to
 sudo mkdir /home/pi/UWB2.0/data/drive
 ```
 ```
-sudo mount -t exfat /dev/*** /home/pi/UWB2.0/data
+sudo mount -t exfat /dev/*** /home/pi/UWB2.0/data/drive
 ```
 ```
 sudo umount /dev/***
