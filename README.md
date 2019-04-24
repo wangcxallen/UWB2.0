@@ -51,7 +51,7 @@ sudo apt-get install exfat-fuse exfat-utils
 ```
 Mounting drive will eliminate all data from the mount point. Thus it's better to establish a new directory. 
 ```
-sudo mkdir /media/headcount*
+sudo mkdir /home/pi/UWB2.0/data/drive
 ```
 ```
 sudo mount -t exfat /dev/*** /home/pi/UWB2.0/data
