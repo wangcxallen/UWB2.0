@@ -54,7 +54,7 @@ Mounting drive will eliminate all data from the mount point. Thus it's better to
 sudo mkdir /media/headcount*
 ```
 ```
-sudo mount -t exfat /dev/*** /media/headcount*
+sudo mount -t exfat /dev/*** /home/pi/UWB2.0/data
 ```
 ```
 sudo umount /dev/***
