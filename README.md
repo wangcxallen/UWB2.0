@@ -73,3 +73,10 @@ Put this new dirve in the list
 PARTUUID=***  /home/pi/UWB2.0/data/drive      exfat   defaults          0       2
 ```
 
+## Data Collection
+```
+./UWB2.0/dw1000/src/dw1000_tx
+```
+```
+./UWB2.0/dw1000/src/dw1000_rx_cir file.txt
+```
