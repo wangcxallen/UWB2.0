@@ -17,7 +17,7 @@ Mac address table:
 
 `B8:27:EB:F9:66:89` (Raspberry Pi Foundation) -> rpi3 -> 10.10.10.196
 
-`B8:27:EB:22:BF:7A` (Raspberry Pi Foundation) -> rpi4 ->
+`B8:27:EB:22:BF:7A` (Raspberry Pi Foundation) -> rpi4 -> 10.10.10.117
 
 ## Overall description
 
