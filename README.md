@@ -78,5 +78,5 @@ PARTUUID=***  /home/pi/UWB2.0/data/drive      exfat   defaults          0       
 ./UWB2.0/dw1000/src/dw1000_tx
 ```
 ```
-./UWB2.0/dw1000/src/dw1000_rx_cir file.txt
+./UWB2.0/dw1000/src/dw1000_rx_cir test.txt
 ```
