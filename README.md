@@ -9,15 +9,15 @@ Mac address table:
 
 `B8:EE:65:03:51:29` -> hostap(wifi)
 
-`B8:27:EB:90:4B:A4` (Raspberry Pi Foundation) -> rpi0
+`B8:27:EB:90:4B:A4` (Raspberry Pi Foundation) -> rpi0 -> 10.10.10.175
 
-`B8:27:EB:B5:64:EA` (Raspberry Pi Foundation) -> rpi1
+`B8:27:EB:B5:64:EA` (Raspberry Pi Foundation) -> rpi1 -> 10.10.10.105
 
-`B8:27:EB:58:9D:C8` (Raspberry Pi Foundation) -> rpi2
+`B8:27:EB:58:9D:C8` (Raspberry Pi Foundation) -> rpi2 -> 10.10.10.149
 
-`B8:27:EB:F9:66:89` (Raspberry Pi Foundation) -> rpi3
+`B8:27:EB:F9:66:89` (Raspberry Pi Foundation) -> rpi3 -> 10.10.10.196
 
-`B8:27:EB:22:BF:7A` (Raspberry Pi Foundation) -> rpi4
+`B8:27:EB:22:BF:7A` (Raspberry Pi Foundation) -> rpi4 ->
 
 ## Overall description
 
